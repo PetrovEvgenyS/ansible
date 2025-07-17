@@ -1,0 +1,24 @@
+
+---
+- name: Reload Firewalld
+  hosts: all
+  become: true
+  tasks:
+    - name: Reload Firewalld
+      service:
+        name: firewalld
+        state: reloaded
+
+
+- name: Open 80/tcp port
+    firewalld:
+      port: 80/tcp
+      permanent: true
+      state: enabled
+
+
+
+  - name: Restart Firewalld
+    service: name=firewalld state=restarted
+    listen: "testy"
+

@@ -1,0 +1,57 @@
+# loop и with_items делают одно и тоже
+# loop - это переименованный with_items
+---
+- name: Loop (With_Items)
+  hosts: alma-vm01
+  become: true
+
+# Пример с использованием loop
+  tasks:
+    - name: Say Hello to ALL
+      debug: msg="Hello {{ item }}"
+      loop:
+        - "Vasya"
+        - "Petya"
+        - "Masha"
+        - "Olya"
+
+# Пример с использованием with_items
+
+    - name: Say Hello to ALL
+      debug: msg="Hello {{ item }}"
+      with_items:
+        - "Vasya"
+        - "Petya"
+        - "Masha"
+        - "Olya"
+
+# Пример с использованием loop
+
+    - name: Install many packaged
+      dnf: name={{ item }}" state=latest
+      loop:
+        - mc
+        - vim
+        - tree
+        - htop
+
+# Пример с использованием Until
+
+    - name: Loop Until example
+      # Добавлять букву "Z" в файл myfile.txt и выводить содержимое
+      # -n значит, что добавлять букву не с новой строки"Z"
+      shell: echo -n Z >> myfile.txt && cat myfile.txt
+      # Сохранить содержимое файла myfile.txt в переменную output
+      register: output
+      # Задержка 2 секунды
+      delay: 2
+      # Повторять 10 раз
+      retries: 10
+      debug: var=output
+      # Проверка output, существует в нем "ZZZZ".
+      # Т.е. выполнять цикл пока в output нет "ZZZZ".
+      until: output.stdout.find("ZZZZ") == false
+
+    - name: Print final output
+      debug:
+        var: output.stdout

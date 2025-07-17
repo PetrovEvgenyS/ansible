@@ -1,0 +1,37 @@
+
+---
+- name: Test connection to my servers
+  hosts: myhosts 
+  become: true
+
+  tasks:
+
+  - name: Ping my servers
+    ping:
+
+# Файл 1 создастся только на alma-vm01
+  - name: Create file_1
+    copy:
+      dest: /tmp/file_1.txt
+      content:
+        This is file_1
+    delegate_to: alma-vm01
+
+# Файл 2 создастся на всех хостах
+  - name: Create file_2
+    copy:
+      dest: /tmp/file_2.txt
+      content:
+        This is file_2
+
+# Команда "echo" будет выполнена на всех серверах и его содержимое сохранится на 
+# на локальном хосте "127.0.0.1"
+  - name: Choto
+    shell: echo This server {{ ansible_hostname }} >> /tmp/whohost.txt
+    delegate_to: 127.0.0.1
+
+# Команда выполнится только alma-vm02 один раз
+  - name: Update my database
+    shell: echo UPDATING Database ...
+    run_once: true
+    delegate_to: alma-vm02

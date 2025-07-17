@@ -1,0 +1,6 @@
+---
+- name: Install Apache and Upload my Web Page
+  hosts: myhosts
+  become: true
+  roles:
+    - deploy_apache

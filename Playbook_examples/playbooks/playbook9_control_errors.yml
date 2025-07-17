@@ -1,0 +1,26 @@
+# Playbook - перехват и контроль ошибок
+---
+- name: Test connection to my servers
+  hosts: redhat
+  any_errors_fatal: true
+  become: true
+
+  tasks:
+# Запускаем установку несуществующей программы.
+# Игнорируем ошибку установки и продалжаем выполнять
+# следующую задачу (task number 2) 
+    - name: Task number 1
+      dnf: name=treeee state=latest
+      ignore_errors: true
+
+# Запускаем команду echo.
+# Сохраняем содержимое команды echo в переменную results.
+# Выдать ошибку если в results.stdout будет содержаться
+# слово "World"
+    - name: Task number 2 
+      shell: echo Hello World!!!
+      register: results
+      failed_when: "'World' in results.stdout"
+
+    - name: Task number 3 
+      shell: echo Privet Mir!!!

@@ -1,0 +1,12 @@
+
+---
+- name: Install default Apache Web Server
+  hosts: all
+  become: true
+
+  tasks:
+  - name: Install Apache Web Server
+    dnf: name=httpd state=httpd state=installed
+
+  - name: Start Apache and Enable it on the every boot
+    service: name=httpd state=started enabled=yes

@@ -1,0 +1,10 @@
+
+---
+- name: Test connection to my servers
+  hosts: myhosts 
+  become: true
+
+  tasks:
+
+  - name: Ping my servers
+    ping:
