@@ -1,0 +1,6 @@
+---
+- name: Install Zabbix Agent on target hosts (AlmaLinux)
+  hosts: all
+  become: true
+  roles:
+    - zabbix-agent

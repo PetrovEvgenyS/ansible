@@ -1,0 +1,5 @@
+---
+# vars file for zabbix-agent
+Server: zabbix-lan
+ListenPort: 10050
+HostMetadata: HOME-PROD
