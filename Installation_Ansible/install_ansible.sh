@@ -16,21 +16,21 @@ fi
 # Установить и настроить Ansible для Ubuntu
 install_ansible_ubuntu() {
     # Установить Ansible
-    sudo apt install -y ansible
+    apt install -y ansible
 }
 
 # Установить и настроить Ansible для AlmaLinux
 install_ansible_almalinux() {
     # Установить репозиторий EPEL
-    sudo dnf install -y epel-release
+    dnf install -y epel-release
     # Установить Ansible
-    sudo dnf install -y ansible
+    dnf install -y ansible
 }
 
 # Создать конфигурационный файл Ansible
 create_ansible_config() { 
-    sudo mkdir -p /etc/ansible
-    sudo tee /etc/ansible/ansible.cfg > /dev/null <<EOL
+    mkdir -p /etc/ansible
+    tee /etc/ansible/ansible.cfg > /dev/null <<EOL
 [defaults]
 # Чтобы не задавал вопросы по поводу отпечатков ssh
 host_key_checking  = false
@@ -55,7 +55,7 @@ EOL
 # Создать директорию ansible и файл Inventory
 create_inventory() {
     mkdir -p /srv/ansible
-    sudo tee /srv/ansible/inventory.ini > /dev/null <<EOL
+    tee /srv/ansible/inventory.ini > /dev/null <<EOL
 [almalinux]
 node-vm01
 node-vm02
@@ -75,7 +75,7 @@ EOL
 # Создать файл переменных для группы хостов [myservers]
 create_group_vars() {
     mkdir -p /srv/ansible/group_vars
-    sudo tee /srv/ansible/group_vars/myservers > /dev/null <<EOL
+    tee /srv/ansible/group_vars/myservers > /dev/null <<EOL
 # Переменные для группы myservers
 # [myservers:vars]
 # Используется УЗ root
