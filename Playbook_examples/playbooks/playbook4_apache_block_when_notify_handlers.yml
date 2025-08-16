@@ -3,11 +3,9 @@
   hosts: myhosts
   become: true
 
-
   vars:
     source_file: /root/mywebsite/index.html
     destin_file: /var/www/html
-
 
   tasks:
 
