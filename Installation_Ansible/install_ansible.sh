@@ -11,6 +11,9 @@ greenprint() { echo; printf "${GREEN}%s${RESET}\n" "$1"; }
 # Определение дистрибутива:
 OS=$(awk -F= '/^ID=/{gsub(/"/, "", $2); print $2}' /etc/os-release)
 
+BASE="/etc/ansible"           # базовый каталог для Ansible
+INFRA="$BASE/infrastructure"  # каталог инфраструктуры Ansible
+
 
 # -----------------------------------------------------------------------------------------
 
@@ -43,6 +46,9 @@ install_ansible_almalinux() {
 
 # Создать конфигурационный файл Ansible
 create_ansible_config() { 
+    # Создание каталогов
+    mkdir -p "$INFRA"/{playbooks,roles,group_vars,inventories/{dev/group_vars,prod/group_vars}}
+
     magentaprint "Создание конфигурационного файла /etc/ansible/ansible.cfg"
     tee /etc/ansible/ansible.cfg > /dev/null <<EOL
 [defaults]
@@ -51,6 +57,19 @@ inventory          = /etc/ansible/inventory.ini     # Указываем пут�
 interpreter_python = /usr/bin/python3               # Чтобы не выводил информацию о python
 EOL
 }
+
+
+# ansible.cfg
+tee "$BASE/ansible.cfg" >/dev/null <<'CFG'
+[defaults]
+inventory = /etc/ansible/infrastructure/inventories
+roles_path = /etc/ansible/infrastructure/roles
+host_key_checking = False                # Чтобы не задавал вопросы по поводу отпечатков ssh
+interpreter_python = /usr/bin/python3    # Чтобы не выводил информацию о python
+retry_files_enabled = False              # Отключаем создание файлов с повторными попытками
+stdout_callback = yaml                   # Вывод в формате YAML
+forks = 20                               # Количество одновременных подключений
+CFG
 
 
 # Обновить файл /etc/hosts
@@ -87,25 +106,20 @@ EOL
 }
 
 
-# Создать файл переменных для группы хостов [myservers]
+# Создать файла group_vars/all.yml (глобальный)
 create_group_vars() {
-    magentaprint "Создание файла переменных для группы хостов [myservers]"
-    mkdir -p /etc/ansible/group_vars
-    tee /etc/ansible/group_vars/myservers > /dev/null <<EOL
-# Переменные для группы myservers
-# [myservers:vars]
-# Используется УЗ root
-# ansible_user : root
-# Указываем путь до ssh-ключей, с помощью которых Ansible подключается к группе узлов
-# ansible_ssh_private_key_file : /root/.ssh/authorized_keys
+    magentaprint "Создание файла group_vars/all.yml (глобальный)"
 
+    tee "$INFRA/group_vars/all.yml" >/dev/null <<'YML'
 ---
-ansible_user                 : root
-ansible_ssh_private_key_file : /root/.ssh/authorized_keys
-EOL
+# общие переменные для всех окружений
+ansible_user                 : ansible_worker
+ansible_ssh_private_key_file : /ansiblectl/.ssh/id_ansible
+YML
 }
 
 
+# Проверить ОС и установить Ansible
 check_os() {
     # Проверить операционную систему и установить Ansible
     if [ "$OS" == "ubuntu" ]; then
@@ -119,6 +133,7 @@ check_os() {
 }
 
 
+# Завершение и проверка установки Ansible
 finish() {
     magentaprint "Версия Ansible:"
     ansible --version
