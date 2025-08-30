@@ -64,7 +64,7 @@ create_ansible_config() {
     rm -rf /etc/ansible/*
     mkdir -p "$INFRA"/{playbooks,roles,inventories/{group_vars,dev/group_vars,prod/group_vars}}
     
-    magentaprint "Создание конфигурационного файла /etc/ansible/ansible.cfg"
+    magentaprint "Создание конфигурационного файла: $BASE/ansible.cfg"
     tee "$BASE/ansible.cfg" >/dev/null <<'CFG'
 [defaults]
 inventory = /etc/ansible/infrastructure/inventories/inventory.ini
@@ -90,7 +90,7 @@ CFG
 
 # Создать файл Inventory
 create_inventory() {
-    magentaprint "Создание Inventory файла $INFRA/inventories/inventory.ini"
+    magentaprint "Создание Inventory файла: $INFRA/inventories/inventory.ini"
 
     tee "$INFRA/inventories/inventory.ini" > /dev/null <<EOL
 [almalinux]
@@ -112,7 +112,7 @@ EOL
 
 # Создать файла group_vars/all.yml (глобальный)
 create_group_vars() {
-    magentaprint "Создание файла $INFRA/inventories/group_vars/all.yml (глобальный)"
+    magentaprint "Создание файла с переменными: $INFRA/inventories/group_vars/all.yml (глобальный)"
 
     tee "$INFRA/inventories/group_vars/all.yml" >/dev/null <<'YML'
 ---
@@ -132,7 +132,11 @@ finish() {
         errorprint "Ansible не установлен или не найден в PATH. Проверьте установку!"
         exit 1
     fi
-    greenprint "Ansible успешно установлен и настроен на $OS."
+
+    magentaprint "Структура каталогов Ansible:"
+    tree /etc/ansible
+
+    greenprint "Ansible успешно установлен и настроен на $OS."; echo
 }
 
 
