@@ -125,13 +125,13 @@ YML
 
 # Завершение и проверка установки Ansible
 finish() {
-    magentaprint "Версия Ansible:"
-    ansible --version
-
     if ! command -v ansible >/dev/null 2>&1; then
         errorprint "Ansible не установлен или не найден в PATH. Проверьте установку!"
         exit 1
     fi
+
+    magentaprint "Версия Ansible:"
+    ansible --version
 
     magentaprint "Структура каталогов Ansible:"
     tree /etc/ansible
