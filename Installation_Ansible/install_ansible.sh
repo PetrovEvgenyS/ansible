@@ -44,51 +44,55 @@ install_ansible_almalinux() {
 }
 
 
-# Создать конфигурационный файл Ansible
-create_ansible_config() { 
-    # Создание каталогов
-    mkdir -p "$INFRA"/{playbooks,roles,group_vars,inventories/{dev/group_vars,prod/group_vars}}
-
-    magentaprint "Создание конфигурационного файла /etc/ansible/ansible.cfg"
-    tee /etc/ansible/ansible.cfg > /dev/null <<EOL
-[defaults]
-host_key_checking  = false                          # Чтобы не задавал вопросы по поводу отпечатков ssh
-inventory          = /etc/ansible/inventory.ini     # Указываем путь до файла инвентори
-interpreter_python = /usr/bin/python3               # Чтобы не выводил информацию о python
-EOL
+# Проверить ОС и установить Ansible
+check_os() {
+    # Проверить операционную систему и установить Ansible
+    if [ "$OS" == "ubuntu" ]; then
+        install_ansible_ubuntu
+    elif [ "$OS" == "almalinux" ]; then
+        install_ansible_almalinux
+    else
+        errorprint "Скрипт не поддерживает установленную операционную систему: $OS"
+        exit 1
+    fi
 }
 
 
-# ansible.cfg
-tee "$BASE/ansible.cfg" >/dev/null <<'CFG'
+# Создать конфигурационный файл Ansible
+create_ansible_config() { 
+    # Создание каталогов
+    rm -rf /etc/ansible/*
+    mkdir -p "$INFRA"/{playbooks,roles,inventories/{group_vars,dev/group_vars,prod/group_vars}}
+    
+    magentaprint "Создание конфигурационного файла /etc/ansible/ansible.cfg"
+    tee "$BASE/ansible.cfg" >/dev/null <<'CFG'
 [defaults]
-inventory = /etc/ansible/infrastructure/inventories
+inventory = /etc/ansible/infrastructure/inventories/inventory.ini
 roles_path = /etc/ansible/infrastructure/roles
-host_key_checking = False                # Чтобы не задавал вопросы по поводу отпечатков ssh
-interpreter_python = /usr/bin/python3    # Чтобы не выводил информацию о python
-retry_files_enabled = False              # Отключаем создание файлов с повторными попытками
-stdout_callback = yaml                   # Вывод в формате YAML
-forks = 20                               # Количество одновременных подключений
+
+# Не спрашивать про SSH key
+host_key_checking = False
+
+# Явно использовать Python 3. Чтобы не выводил информацию о python
+interpreter_python = /usr/bin/python3
+
+# Не создавать retry-файлы. Отключаем создание файлов с повторными попытками
+retry_files_enabled = False
+
+# Вывод в формате YAML
+stdout_callback = yaml
+
+# Кол-во параллельных подключений по ssh.
+forks = 20
 CFG
-
-
-# Обновить файл /etc/hosts
-update_hosts_file() {
-    magentaprint "Обновление файла /etc/hosts"
-    tee -a /etc/hosts > /dev/null <<EOL
-10.100.10.1 node-vm01
-10.100.10.2 node-vm02
-10.100.10.3 node-vm03
-10.100.10.4 node-vm04
-10.100.10.5 node-vm05
-EOL
 }
 
 
 # Создать файл Inventory
 create_inventory() {
-    magentaprint "Создание Inventory файла /etc/ansible/inventory.ini"
-    tee /etc/ansible/inventory.ini > /dev/null <<EOL
+    magentaprint "Создание Inventory файла $INFRA/inventories/inventory.ini"
+
+    tee "$INFRA/inventories/inventory.ini" > /dev/null <<EOL
 [almalinux]
 node-vm01
 node-vm02
@@ -108,28 +112,14 @@ EOL
 
 # Создать файла group_vars/all.yml (глобальный)
 create_group_vars() {
-    magentaprint "Создание файла group_vars/all.yml (глобальный)"
+    magentaprint "Создание файла $INFRA/inventories/group_vars/all.yml (глобальный)"
 
-    tee "$INFRA/group_vars/all.yml" >/dev/null <<'YML'
+    tee "$INFRA/inventories/group_vars/all.yml" >/dev/null <<'YML'
 ---
 # общие переменные для всех окружений
 ansible_user                 : ansible_worker
 ansible_ssh_private_key_file : /ansiblectl/.ssh/id_ansible
 YML
-}
-
-
-# Проверить ОС и установить Ansible
-check_os() {
-    # Проверить операционную систему и установить Ansible
-    if [ "$OS" == "ubuntu" ]; then
-        install_ansible_ubuntu
-    elif [ "$OS" == "almalinux" ]; then
-        install_ansible_almalinux
-    else
-        errorprint "Скрипт не поддерживает установленную операционную систему: $OS"
-        exit 1
-    fi
 }
 
 
@@ -150,7 +140,6 @@ finish() {
 main() {
     check_os
     create_ansible_config
-    update_hosts_file
     create_inventory
     create_group_vars
     finish
