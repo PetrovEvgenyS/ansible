@@ -12,15 +12,14 @@ greenprint() { echo; printf "${GREEN}%s${RESET}\n" "$1"; }
 OS=$(awk -F= '/^ID=/{gsub(/"/, "", $2); print $2}' /etc/os-release)
 
 BASE="/etc/ansible"           # базовый каталог для Ansible
-INFRA="$BASE/infrastructure"  # каталог инфраструктуры Ansible
 
 
 # -----------------------------------------------------------------------------------------
 
 
 # Проверка запуска через sudo
-if [ -z "$SUDO_USER" ]; then
-    errorprint "Пожалуйста, запустите скрипт через sudo."
+if [[ $EUID -ne 0 ]]; then
+    errorprint "Пожалуйста, запустите скрипт от root или через sudo."
     exit 1
 fi
 
@@ -31,7 +30,7 @@ install_ansible_ubuntu() {
     apt update
     apt install -y software-properties-common
     add-apt-repository --yes --update ppa:ansible/ansible
-    apt install -y python3 ansible
+    apt install -y python3 ansible tree
 }
 
 
@@ -40,7 +39,7 @@ install_ansible_almalinux() {
     magentaprint "Установка epel-release"
     dnf install -y epel-release
     magentaprint "Установка Ansible на $OS"
-    dnf install -y python3 ansible
+    dnf install -y python3 ansible tree
 }
 
 
@@ -62,15 +61,15 @@ check_os() {
 create_ansible_config() { 
     # Создание каталогов
     rm -rf /etc/ansible/*
-    mkdir -p "$INFRA"/{playbooks,roles,inventories/{group_vars,dev/group_vars,prod/group_vars}}
+    mkdir -p "$BASE"/{playbooks,roles,inventories/{group_vars,dev/group_vars,prod/group_vars}}
     
     magentaprint "Создание конфигурационного файла: $BASE/ansible.cfg"
-    tee "$BASE/ansible.cfg" >/dev/null <<'CFG'
+    tee "$BASE/ansible.cfg" >/dev/null <<CFG
 [defaults]
-inventory = /etc/ansible/infrastructure/inventories/inventory.ini
-roles_path = /etc/ansible/infrastructure/roles
+inventory = ${BASE}/inventories/inventory.yml
+roles_path = ${BASE}/roles
 
-# Не спрашивать про SSH key
+# Не спрашивать про SSH key (fingerprint)
 host_key_checking = False
 
 # Явно использовать Python 3. Чтобы не выводил информацию о python
@@ -80,7 +79,8 @@ interpreter_python = /usr/bin/python3
 retry_files_enabled = False
 
 # Вывод в формате YAML
-stdout_callback = yaml
+stdout_callback = ansible.builtin.default
+result_format = yaml
 
 # Кол-во параллельных подключений по ssh.
 forks = 20
@@ -90,33 +90,30 @@ CFG
 
 # Создать файл Inventory
 create_inventory() {
-    magentaprint "Создание Inventory файла: $INFRA/inventories/inventory.ini"
+    magentaprint "Создание Inventory файла: $BASE/inventories/inventory.yml (глобальный)"
 
-    tee "$INFRA/inventories/inventory.ini" > /dev/null <<EOL
-[almalinux]
-node-vm01
-node-vm02
-
-[ubuntu]
-node-vm03
-node-vm04
-
-[manager]
-node-vm05
-
-[myservers]
-node-vm[01:05]
-EOL
+    tee "$BASE/inventories/inventory.yml" > /dev/null <<YML
+---
+# Глобальный Inventory для всех окружений
+all:
+  children:
+    web:
+      hosts:
+        dev-web-1: { ansible_host: 10.100.10.11 }
+    db:
+      hosts:
+        dev-db-1: { ansible_host: 10.100.10.12 }
+YML
 }
 
 
 # Создать файла group_vars/all.yml (глобальный)
 create_group_vars() {
-    magentaprint "Создание файла с переменными: $INFRA/inventories/group_vars/all.yml (глобальный)"
+    magentaprint "Создание файла с переменными: $BASE/inventories/group_vars/all.yml (глобальный)"
 
-    tee "$INFRA/inventories/group_vars/all.yml" >/dev/null <<'YML'
+    tee "$BASE/inventories/group_vars/all.yml" >/dev/null <<YML
 ---
-# общие переменные для всех окружений
+# Глобальные переменные для всех окружений
 ansible_user                 : ansible_worker
 ansible_ssh_private_key_file : /ansiblectl/.ssh/id_ansible
 YML
