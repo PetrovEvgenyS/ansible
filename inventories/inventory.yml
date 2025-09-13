@@ -15,3 +15,9 @@ all:                 # корневая группа (Ansible видит всё 
         db1: { ansible_host: 10.100.10.4 } # первый хост
         db2: { ansible_host: 10.100.10.5 } # второй хост
         db3: { ansible_host: 10.100.10.6 } # третий хост
+    
+    app:             # группа app
+      hosts:         # список хостов группы app
+        node-vm01.local:   # первый хост
+        node-vm02.local:   # второй хост
+        node-vm03.local:   # третий хост
