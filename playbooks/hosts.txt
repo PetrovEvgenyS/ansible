@@ -1,5 +1,0 @@
-[myhosts]
-alma-vm01
-alma-vm02
-ubuntu-vm03
-
