@@ -1,10 +1,10 @@
-
 ---
-- name: Test connection to my servers
-  hosts: myhosts 
+- name: Test connection to servers
+  hosts: all
+  gather_facts: no
   become: true
 
   tasks:
 
-  - name: Ping my servers
+  - name: ping my servers
     ping:
