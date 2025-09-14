@@ -1,17 +1,38 @@
 ---
-- name: Install default Apache Web Server
-  hosts: node-vm01.local
+- name: Install Apache Web Server
+  hosts: all
   become: true
-  gather_facts: false
+  gather_facts: true
+
+  vars:
+    apache_pkg:
+      RedHat: httpd
+      Debian: apache2
+    apache_svc:
+      RedHat: httpd
+      Debian: apache2
 
   tasks:
+    - name: Show detected OS family and chosen package/service
+      debug:
+        msg:
+          - "os_family: {{ ansible_os_family }}"
+          - "pkg: {{ apache_pkg.get(ansible_os_family) }}"
+          - "svc: {{ apache_svc.get(ansible_os_family) }}"
+
+    - name: Update apt cache if Debian family
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
     - name: Install Apache Web Server
-      dnf:
-        name: httpd
+      package:
+        name: "{{ apache_pkg.get(ansible_os_family) }}"
         state: present
 
-    - name: Start Apache and enable it on every boot
+    - name: Start and enable Apache service
       service:
-        name: httpd
+        name: "{{ apache_svc.get(ansible_os_family) }}"
         state: started
         enabled: true
