@@ -5,6 +5,7 @@
 ## Оглавление
 - [install_apache.yml](#installapacheyml)
 - [ping.yml](#pingyml)
+- [apache_webpage.yml](#apache_webpageyml)
 
 ## install_apache.yml
 
@@ -17,4 +18,10 @@
 Проверяет доступность серверов с помощью модуля `ping`. Используется для тестирования соединения с целевыми хостами.
 
 [Посмотреть playbook](./ping.yml)
+
+## apache_webpage.yml
+
+Устанавливает Apache и копирует веб-страницу на сервер. Автоматически определяет ОС (RedHat или Debian), устанавливает соответствующий пакет, копирует файл с нужными правами и перезапускает сервис Apache.
+
+[Посмотреть playbook](./apache_webpage.yml)
 
