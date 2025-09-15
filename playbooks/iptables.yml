@@ -1,40 +1,91 @@
-- name: Базовый фаервол (SSH + HTTP)
+- name: Базовый фаервол (SSH + HTTP + HTTPS)
   hosts: servers
-  become: yes
+  become: true
   tasks:
-    - name: Установить iptables-persistent
-      apt:
+    - name: Установить пакет для сохранения правил (Debian/Ubuntu)
+      ansible.builtin.apt:
         name: iptables-persistent
         state: present
       when: ansible_os_family == "Debian"
 
-    - name: Сбросить все правила
-      command: iptables -F
+    - name: Установить пакет для сохранения правил (RHEL/CentOS)
+      ansible.builtin.yum:
+        name: iptables-services
+        state: present
+      when: ansible_os_family == "RedHat"
 
-    - name: Удалить пользовательские цепочки
-      command: iptables -X
+    - name: Отключить firewalld (RHEL/CentOS)
+      ansible.builtin.service:
+        name: firewalld
+        state: stopped
+        enabled: no
+      when: ansible_os_family == "RedHat"
+
+    - name: Включить iptables сервис (RHEL/CentOS)
+      ansible.builtin.service:
+        name: iptables
+        state: started
+        enabled: yes
+      when: ansible_os_family == "RedHat"
 
     - name: Разрешить ESTABLISHED,RELATED
-      command: iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+      ansible.builtin.iptables:
+        chain: INPUT
+        ctstate: ESTABLISHED,RELATED
+        jump: ACCEPT
 
     - name: Разрешить loopback
-      command: iptables -A INPUT -i lo -j ACCEPT
+      ansible.builtin.iptables:
+        chain: INPUT
+        in_interface: lo
+        jump: ACCEPT
 
     - name: Разрешить SSH
-      command: iptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 22
+        ctstate: NEW
+        jump: ACCEPT
 
-    - name: Разрешить HTTP
-      command: iptables -A INPUT -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
+    - name: Разрешить HTTP и HTTPS
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: "80,443"
+        ctstate: NEW
+        jump: ACCEPT
+        match: multiport
 
     - name: Политика INPUT DROP
-      command: iptables -P INPUT DROP
+      ansible.builtin.iptables:
+        chain: INPUT
+        policy: DROP
 
     - name: Политика FORWARD DROP
-      command: iptables -P FORWARD DROP
+      ansible.builtin.iptables:
+        chain: FORWARD
+        policy: DROP
 
     - name: Политика OUTPUT ACCEPT
-      command: iptables -P OUTPUT ACCEPT
+      ansible.builtin.iptables:
+        chain: OUTPUT
+        policy: ACCEPT
 
     - name: Сохранить правила (Debian/Ubuntu)
-      command: netfilter-persistent save
+      ansible.builtin.command: netfilter-persistent save
       when: ansible_os_family == "Debian"
+
+    - name: Сообщить путь сохранения (Debian/Ubuntu)
+      ansible.builtin.debug:
+        msg: "Правила сохранены в /etc/iptables/rules.v4"
+      when: ansible_os_family == "Debian"
+
+    - name: Сохранить правила (RHEL/CentOS)
+      ansible.builtin.command: service iptables save
+      when: ansible_os_family == "RedHat"
+
+    - name: Сообщить путь сохранения (RHEL/CentOS)
+      ansible.builtin.debug:
+        msg: "Правила сохранены в /etc/sysconfig/iptables"
+      when: ansible_os_family == "RedHat"
