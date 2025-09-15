@@ -1,0 +1,32 @@
+---
+- name: Базовый фаервол (SSH + HTTP)
+  hosts: servers
+  become: yes
+  tasks:
+    - name: Сбросить все правила
+      command: iptables -F
+
+    - name: Удалить пользовательские цепочки
+      command: iptables -X
+
+    - name: Разрешить ESTABLISHED,RELATED
+      command: iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+    - name: Разрешить loopback
+      command: iptables -A INPUT -i lo -j ACCEPT
+
+    - name: Разрешить SSH
+      command: iptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
+
+    - name: Разрешить HTTP
+      command: iptables -A INPUT -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
+
+    - name: Политика INPUT DROP
+      command: iptables -P INPUT DROP
+
+    - name: Политика FORWARD DROP
+      command: iptables -P FORWARD DROP
+
+    - name: Политика OUTPUT ACCEPT
+      command: iptables -P OUTPUT ACCEPT
+
