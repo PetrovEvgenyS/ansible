@@ -28,18 +28,6 @@
         enabled: yes
       when: ansible_os_family == "RedHat"
 
-    # === Очистка правил (аналог iptables -F и -X) ===
-    - name: Очистить все правила (аналог iptables -F)
-      ansible.builtin.iptables:
-        table: filter
-        flush: yes
-
-    - name: Удалить все пользовательские цепочки (аналог iptables -X)
-      ansible.builtin.iptables:
-        table: filter
-        flush: yes
-        state: absent
-
     # === Базовые разрешения ===
     - name: Разрешить ESTABLISHED,RELATED
       ansible.builtin.iptables:
