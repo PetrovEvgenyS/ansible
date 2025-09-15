@@ -1,8 +1,13 @@
----
 - name: Базовый фаервол (SSH + HTTP)
   hosts: servers
   become: yes
   tasks:
+    - name: Установить iptables-persistent
+      apt:
+        name: iptables-persistent
+        state: present
+      when: ansible_os_family == "Debian"
+
     - name: Сбросить все правила
       command: iptables -F
 
@@ -30,3 +35,6 @@
     - name: Политика OUTPUT ACCEPT
       command: iptables -P OUTPUT ACCEPT
 
+    - name: Сохранить правила (Debian/Ubuntu)
+      command: netfilter-persistent save
+      when: ansible_os_family == "Debian"
