@@ -1,4 +1,4 @@
-- name: Базовый фаервол (SSH + HTTP + HTTPS)
+- name: Базовый фаервол (SSH + HTTP/HTTPS)
   hosts: servers
   become: true
   tasks:
@@ -28,6 +28,19 @@
         enabled: yes
       when: ansible_os_family == "RedHat"
 
+    # === Очистка правил (аналог iptables -F и -X) ===
+    - name: Очистить все правила (аналог iptables -F)
+      ansible.builtin.iptables:
+        table: filter
+        flush: yes
+
+    - name: Удалить все пользовательские цепочки (аналог iptables -X)
+      ansible.builtin.iptables:
+        table: filter
+        flush: yes
+        state: absent
+
+    # === Базовые разрешения ===
     - name: Разрешить ESTABLISHED,RELATED
       ansible.builtin.iptables:
         chain: INPUT
@@ -57,6 +70,7 @@
         jump: ACCEPT
         match: multiport
 
+    # === Политики по умолчанию ===
     - name: Политика INPUT DROP
       ansible.builtin.iptables:
         chain: INPUT
@@ -72,6 +86,7 @@
         chain: OUTPUT
         policy: ACCEPT
 
+    # === Сохранение правил ===
     - name: Сохранить правила (Debian/Ubuntu)
       ansible.builtin.command: netfilter-persistent save
       when: ansible_os_family == "Debian"
