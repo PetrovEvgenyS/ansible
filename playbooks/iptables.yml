@@ -8,12 +8,6 @@
         state: present
       when: ansible_os_family == "Debian"
 
-    - name: Установить пакет для сохранения правил (RHEL/CentOS)
-      ansible.builtin.yum:
-        name: iptables-services
-        state: present
-      when: ansible_os_family == "RedHat"
-
     - name: Отключить firewalld (RHEL/CentOS)
       ansible.builtin.service:
         name: firewalld
@@ -21,7 +15,14 @@
         enabled: no
       when: ansible_os_family == "RedHat"
 
-    - name: Очистить сохранённый конфиг (RHEL/CentOS)
+    - name: Установить пакет для сохранения правил (RHEL/CentOS)
+      ansible.builtin.yum:
+        name: iptables-services
+        state: present
+      when: ansible_os_family == "RedHat"
+      register: iptables_pkg
+
+    - name: Очистить default конфиг (RHEL/CentOS)
       ansible.builtin.copy:
         dest: /etc/sysconfig/iptables
         owner: root
@@ -34,7 +35,9 @@
           :FORWARD ACCEPT [0:0]
           :OUTPUT ACCEPT [0:0]
           COMMIT
-      when: ansible_os_family == "RedHat"
+      when:
+        - ansible_os_family == "RedHat"
+        - iptables_pkg is changed
 
     - name: Включить iptables сервис (RHEL/CentOS)
       ansible.builtin.service:
@@ -42,22 +45,6 @@
         state: started
         enabled: yes
       when: ansible_os_family == "RedHat"
-
-    # # (не обязательно, но на всякий случай — зеркально для Debian/Ubuntu)
-    # - name: Очистить сохранённый конфиг (Debian/Ubuntu)
-    #   ansible.builtin.copy:
-    #     dest: /etc/iptables/rules.v4
-    #     owner: root
-    #     group: root
-    #     mode: '0644'
-    #     content: |
-    #       # managed by Ansible
-    #       *filter
-    #       :INPUT ACCEPT [0:0]
-    #       :FORWARD ACCEPT [0:0]
-    #       :OUTPUT ACCEPT [0:0]
-    #       COMMIT
-    #   when: ansible_os_family == "Debian"
 
     # === Базовые разрешения ===
     - name: Разрешить ESTABLISHED,RELATED
