@@ -21,12 +21,43 @@
         enabled: no
       when: ansible_os_family == "RedHat"
 
+    - name: Очистить сохранённый конфиг (RHEL/CentOS)
+      ansible.builtin.copy:
+        dest: /etc/sysconfig/iptables
+        owner: root
+        group: root
+        mode: '0600'
+        content: |
+          # managed by Ansible
+          *filter
+          :INPUT ACCEPT [0:0]
+          :FORWARD ACCEPT [0:0]
+          :OUTPUT ACCEPT [0:0]
+          COMMIT
+      when: ansible_os_family == "RedHat"
+
     - name: Включить iptables сервис (RHEL/CentOS)
       ansible.builtin.service:
         name: iptables
         state: started
         enabled: yes
       when: ansible_os_family == "RedHat"
+
+    # # (не обязательно, но на всякий случай — зеркально для Debian/Ubuntu)
+    # - name: Очистить сохранённый конфиг (Debian/Ubuntu)
+    #   ansible.builtin.copy:
+    #     dest: /etc/iptables/rules.v4
+    #     owner: root
+    #     group: root
+    #     mode: '0644'
+    #     content: |
+    #       # managed by Ansible
+    #       *filter
+    #       :INPUT ACCEPT [0:0]
+    #       :FORWARD ACCEPT [0:0]
+    #       :OUTPUT ACCEPT [0:0]
+    #       COMMIT
+    #   when: ansible_os_family == "Debian"
 
     # === Базовые разрешения ===
     - name: Разрешить ESTABLISHED,RELATED
